@@ -11,4 +11,6 @@ export const UserSchema = new mongoose.Schema({
     isActive: {type: Boolean, default: false},
     regData: {type: Date, default: new Date()},
     lastLogin: Date
+}, {
+    toObject: {virtuals: true}
 });

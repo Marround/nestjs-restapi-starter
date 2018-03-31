@@ -4,6 +4,7 @@ import { Model } from 'mongoose';
 import { TokenService } from './token.service';
 import {IUser} from "../interfaces/user.interface";
 import {UserDto, UserOutsideDto, UserTokenOutsideDto} from "../dto/user.dto";
+import {classToClass, plainToClass} from "class-transformer";
 
 @Component()
 export class AuthService {
@@ -18,14 +19,9 @@ export class AuthService {
                 let tokenData: any = this.tokenService.decode(token);
                 let user = await this.userModel.findOne({'_id': tokenData.id}).exec();
                 if (user && this.tokenService.getSecretKey(tokenData) === this.tokenService.getSecretKey(user)) {
-                    let userOutside = new UserOutsideDto();
-                    userOutside.id = user.id;
-                    userOutside.email = user.email;
-                    userOutside.displayName = user.displayName;
-                    userOutside.isUser = user.isUser;
-                    userOutside.isAdmin = user.isAdmin;
-                    userOutside.isModerator = user.isModerator;
-                    userOutside.isActive = user.isActive;
+                    const userOutside = classToClass(plainToClass<UserDto, object>(UserDto, user.toObject(), {
+                        excludePrefixes: ["_"]
+                    }));
 
                     let res = new UserTokenOutsideDto();
                     res.user = userOutside;
@@ -43,11 +39,33 @@ export class AuthService {
         }
     }
 
+    async getToken(token: string): Promise<any>{
+        try {
+
+            return await this.tokenService.verify(token);
+        } catch (e) {
+            if ((<Error>e).name === 'TokenExpiredError') {
+                let tokenData: any = this.tokenService.decode(token);
+                let userOutside: UserOutsideDto = this.tokenService.decode(token);
+                let findedUser = await this.userModel.findOne({_id: userOutside.id}).exec();
+                if (findedUser && this.tokenService.getSecretKey(tokenData) === this.tokenService.getSecretKey(findedUser)) {
+                    return await this.tokenService.createToken(findedUser);
+                }else {
+                    throw await new ReadError('Пользователь не найден', {name: 'User not found.'});
+                }
+            }else if ((<Error>e).name === 'JsonWebTokenError') {
+                throw await new ReadError("Ошибка токена", e);
+            }
+            else {
+                throw await new ReadError("Неизвестная ошибка", e);
+            }
+        }
+    }
+
     async register(email: string, username: string, password: string): Promise<UserTokenOutsideDto> {
         try {
-            // let user = new User(email, password, username, true, false, false, true, new Date(), new Date());
             let user = new User();
-            user.email = email;
+            user.email = email.toLowerCase();
             user.setPassword(password);
             user.displayName = username;
             user.isUser = true;
@@ -60,14 +78,9 @@ export class AuthService {
             const createUser = new this.userModel(user);
             let createdUser = await createUser.save();
 
-            let userOutside = new UserOutsideDto();
-            userOutside.id = createdUser.id;
-            userOutside.email = createdUser.email;
-            userOutside.displayName = createdUser.displayName;
-            userOutside.isUser = createdUser.isUser;
-            userOutside.isAdmin = createdUser.isAdmin;
-            userOutside.isModerator = createdUser.isModerator;
-            userOutside.isActive = createdUser.isActive;
+            const userOutside = classToClass(plainToClass<UserDto, object>(UserDto, createdUser.toObject(), {
+                excludePrefixes: ["_"]
+            }));
 
             let res = new UserTokenOutsideDto();
             res.user = userOutside;
@@ -80,6 +93,7 @@ export class AuthService {
     }
 
     async login(email: string, password: string): Promise<UserTokenOutsideDto> {
+        email = email.toLowerCase();
         try {
             let findedUser = await this.userModel.findOne({email: email}).exec();
 
@@ -91,14 +105,9 @@ export class AuthService {
                     throw new Error('Не верный email или пароль');
                 }
 
-                let userOutside = new UserOutsideDto();
-                userOutside.id = findedUser.id;
-                userOutside.email = findedUser.email;
-                userOutside.displayName = findedUser.displayName;
-                userOutside.isUser = findedUser.isUser;
-                userOutside.isAdmin = findedUser.isAdmin;
-                userOutside.isModerator = findedUser.isModerator;
-                userOutside.isActive = findedUser.isActive;
+                const userOutside = classToClass(plainToClass<UserDto, object>(UserDto, findedUser.toObject(), {
+                    excludePrefixes: ["_"]
+                }));
 
                 let res = new UserTokenOutsideDto();
                 res.user = userOutside;
@@ -111,4 +120,9 @@ export class AuthService {
         }
     }
 
+}
+
+function ReadError(message, cause) {
+    this.message = message;
+    this.name = cause.name;
 }

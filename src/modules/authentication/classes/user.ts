@@ -39,18 +39,6 @@ export class User {
     @IsDate()
     lastLogin: Date;
 
-    // constructor(email: string, password: string, displayName: string, isUser: boolean, sAdmin: boolean, isModerator: boolean, isActive: boolean, regData: Date, lastLogin: Date) {
-    //     this.email = email;
-    //     this.password = password;
-    //     this.displayName = displayName;
-    //     this.isUser = isUser;
-    //     this.isAdmin = sAdmin;
-    //     this.isModerator = isModerator;
-    //     this.isActive = isActive;
-    //     this.regData = regData;
-    //     this.lastLogin = lastLogin;
-    // }
-
     makePassword(password: string) {
         let h = new hashers.PBKDF2PasswordHasher();
         let hash = h.encode(password, h.salt());

@@ -1,6 +1,5 @@
 import { Exclude, Type } from 'class-transformer';
 import {IsBoolean, IsDate, IsEmail, IsNotEmpty, MaxLength, MinLength} from 'class-validator';
-import {User} from "../classes/user";
 
 export class UserDto {
     id: string;
@@ -32,10 +31,12 @@ export class UserDto {
     @IsBoolean()
     isActive: boolean;
 
+    @Exclude()
     @IsNotEmpty()
     @IsDate()
     regData: Date;
 
+    @Exclude()
     @IsDate()
     lastLogin: Date;
 }

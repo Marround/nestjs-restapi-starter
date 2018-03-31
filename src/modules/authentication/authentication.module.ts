@@ -3,12 +3,16 @@ import {MiddlewaresConsumer} from "@nestjs/common/interfaces/middlewares";
 import { services } from './services/index';
 import { controllers } from './controllers/index';
 import * as passport from 'passport';
-import {DatabaseModule} from "./providers/database.module";
+import {DatabaseModule} from "../providers/database.module";
 import {usersProviders} from "./users.provider";
 
 @Module({
     imports: [
         DatabaseModule
+    ],
+    exports: [
+        ...services,
+        ...usersProviders
     ],
     controllers: [
         ...controllers
@@ -16,12 +20,12 @@ import {usersProviders} from "./users.provider";
     components: [
         ...services,
         ...usersProviders
-    ],
+    ]
 })
 export class AuthenticationModule implements NestModule {
     public configure(consumer: MiddlewaresConsumer) {
         consumer
             .apply(passport.authenticate('jwt', { session: false }))
-            .forRoutes({ path: '/api/auth/authorized', method: RequestMethod.ALL });
+            .forRoutes({ path: '/api/management', method: RequestMethod.ALL });
     }
 }

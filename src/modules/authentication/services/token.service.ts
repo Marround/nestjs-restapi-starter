@@ -24,7 +24,11 @@ export class TokenService {
         const data: any = jwt.decode(
             token
         );
-        return jwt.verify(token, this.getSecretKey(data));
+        try {
+            return jwt.verify(token, this.getSecretKey(data));
+        } catch (err) {
+            throw err;
+        }
     }
 
     decode(token: string) {
